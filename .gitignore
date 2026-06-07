@@ -1,0 +1,9 @@
+node_modules
+dist
+dev-dist
+.claude
+.vite
+*.local
+.DS_Store
+*.log
+node_modules/.tmp
