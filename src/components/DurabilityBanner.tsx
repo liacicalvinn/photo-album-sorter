@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Install, X } from './icons/Icons'
 
 export function DurabilityBanner({
   show,
@@ -16,7 +17,7 @@ export function DurabilityBanner({
   return (
     <div className="durability-banner" role="status">
       <span className="db-icon" aria-hidden>
-        🔒
+        <Install size={18} />
       </span>
       <span className="db-text">
         {ios
@@ -29,11 +30,11 @@ export function DurabilityBanner({
         </button>
       )}
       <button
-        className="btn ghost icon db-close"
+        className="btn ghost icon sm db-close"
         onClick={() => setDismissed(true)}
         aria-label="Dismiss"
       >
-        ✕
+        <X size={18} />
       </button>
     </div>
   )

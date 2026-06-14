@@ -1,5 +1,6 @@
 import type { StorageEstimate } from '../hooks/useStorageEstimate'
 import { formatBytes } from '../lib/fileTypes'
+import { Lock } from './icons/Icons'
 
 export function StorageMeter({
   est,
@@ -20,7 +21,8 @@ export function StorageMeter({
         />
       </div>
       <span className="storage-text">
-        {formatBytes(est.usage)} used {persisted ? '· 🔒' : ''}
+        {formatBytes(est.usage)} used
+        {persisted && <Lock size={11} style={{ marginLeft: 4, verticalAlign: '-1px' }} />}
       </span>
     </div>
   )

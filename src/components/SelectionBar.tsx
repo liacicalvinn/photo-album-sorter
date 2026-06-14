@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { Menu, MenuItem, MenuSep } from './Menu'
+import { FolderPlus, Plus, Trash, X, ChevronDown } from './icons/Icons'
 import type { Chapter, ChapterId } from '../db/types'
 
 export interface SelectionBarProps {
@@ -20,74 +21,68 @@ export function SelectionBar({
   onDelete,
   onClear,
 }: SelectionBarProps) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const ref = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    if (!menuOpen) return
-    const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setMenuOpen(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
-  }, [menuOpen])
-
   if (count === 0) return null
   const byId = new Map(chapters.map((c) => [c.id, c]))
   const ordered = chapterOrder.map((id) => byId.get(id)).filter(Boolean) as Chapter[]
 
   return (
     <div className="selection-bar" role="region" aria-label="Selection actions">
-      <span className="sel-count">{count} selected</span>
+      <span className="sel-count">
+        <strong>{count}</strong> selected
+      </span>
 
       <div className="sel-actions">
-        <div className="move-menu-wrap" ref={ref}>
-          <button className="btn primary" onClick={() => setMenuOpen((o) => !o)}>
-            Move to chapter ▾
-          </button>
-          {menuOpen && (
-            <div className="move-menu" role="menu">
-              <button
-                className="move-menu-item new"
+        <Menu
+          align="left"
+          up
+          trigger={({ toggle }) => (
+            <button className="btn primary" onClick={toggle}>
+              <FolderPlus size={17} />
+              <span>Move to chapter</span>
+              <ChevronDown size={15} />
+            </button>
+          )}
+        >
+          {(close) => (
+            <>
+              <MenuItem
+                icon={<Plus size={16} />}
                 onClick={() => {
-                  setMenuOpen(false)
+                  close()
                   onNewChapter()
                 }}
               >
-                ＋ New chapter from selection
-              </button>
-              {ordered.length > 0 && <div className="move-menu-sep" />}
+                New chapter from selection
+              </MenuItem>
+              {ordered.length > 0 && <MenuSep />}
               {ordered.map((c, i) => (
-                <button
+                <MenuItem
                   key={c.id}
-                  className="move-menu-item"
-                  role="menuitem"
+                  icon={<span className="menu-num">{i + 1}</span>}
                   onClick={() => {
-                    setMenuOpen(false)
+                    close()
                     onMoveTo(c.id)
                   }}
                 >
-                  <span className="move-menu-num">{i + 1}</span>
                   {c.title}
-                </button>
+                </MenuItem>
               ))}
-              {ordered.length === 0 && (
-                <div className="move-menu-empty">No chapters yet</div>
-              )}
-            </div>
+              {ordered.length === 0 && <div className="menu-empty">No chapters yet</div>}
+            </>
           )}
-        </div>
+        </Menu>
 
         <button
-          className="btn danger"
+          className="btn ghost danger"
           onClick={() => {
             if (confirm(`Delete ${count} photo(s)? This cannot be undone.`)) onDelete()
           }}
         >
-          Delete
+          <Trash size={17} />
+          <span className="btn-text">Delete</span>
         </button>
-        <button className="btn ghost" onClick={onClear}>
-          Deselect
+        <button className="btn ghost icon" onClick={onClear} aria-label="Clear selection" title="Deselect">
+          <X size={18} />
         </button>
       </div>
     </div>

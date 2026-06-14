@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useOriginalUrl } from '../hooks/useObjectUrlCache'
+import { X, ChevronLeft, ChevronRight } from './icons/Icons'
 import type { Photo, PhotoId } from '../db/types'
 
 export interface LightboxProps {
@@ -64,7 +65,7 @@ export function Lightbox({ photoIds, index, photosById, onIndex, onClose }: Ligh
         </span>
         <span className="lightbox-name">{photo?.name}</span>
         <button className="btn ghost icon lightbox-close" onClick={onClose} aria-label="Close">
-          ✕
+          <X size={20} />
         </button>
       </div>
 
@@ -77,7 +78,7 @@ export function Lightbox({ photoIds, index, photosById, onIndex, onClose }: Ligh
           }}
           aria-label="Previous"
         >
-          ‹
+          <ChevronLeft size={26} />
         </button>
       )}
 
@@ -98,7 +99,7 @@ export function Lightbox({ photoIds, index, photosById, onIndex, onClose }: Ligh
           }}
           aria-label="Next"
         >
-          ›
+          <ChevronRight size={26} />
         </button>
       )}
     </div>

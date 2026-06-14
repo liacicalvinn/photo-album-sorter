@@ -14,11 +14,15 @@ import {
 } from './db/repo'
 import type { ExportPlan } from './db/repo'
 import { arrayMove } from './lib/order'
+import { ACCEPT_ATTR } from './lib/fileTypes'
 import { useBoard } from './hooks/useBoard'
 import { useDurableStorage } from './hooks/useDurableStorage'
 import { useThumbnailQueue } from './hooks/useThumbnailQueue'
 import { useStorageEstimate } from './hooks/useStorageEstimate'
 import { useSelection } from './hooks/useSelection'
+import { useTheme } from './hooks/useTheme'
+import { useGridDensity } from './hooks/useGridDensity'
+import { useFileDrop } from './hooks/useFileDrop'
 import { buildExportPlan, exportNumberedZip } from './export/numberedZip'
 import { exportProjectBundle } from './export/projectBundle'
 import { importProjectBundle } from './export/importBundle'
@@ -29,6 +33,7 @@ import { Lightbox } from './components/Lightbox'
 import { DurabilityBanner } from './components/DurabilityBanner'
 import { StatusPill } from './components/StatusPill'
 import { ProgressOverlay } from './components/ProgressOverlay'
+import { ImageIcon } from './components/icons/Icons'
 import { FirstRunModal } from './components/modals/FirstRunModal'
 import { QuotaErrorModal } from './components/modals/QuotaErrorModal'
 import { BackupNagModal } from './components/modals/BackupNagModal'
@@ -47,6 +52,8 @@ export default function App() {
   const thumbProgress = useThumbnailQueue()
   const storage = useStorageEstimate(board?.totalPhotos)
   const selection = useSelection()
+  const theme = useTheme()
+  const grid = useGridDensity()
 
   const [lightbox, setLightbox] = useState<{ ids: string[]; index: number } | null>(null)
   const [busy, setBusy] = useState<Busy | null>(null)
@@ -54,9 +61,44 @@ export default function App() {
   const [exportPlan, setExportPlan] = useState<ExportPlan | null>(null)
   const [showNag, setShowNag] = useState(false)
   const naggedRef = useRef(false)
+  const photoInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     ensureMeta()
+  }, [])
+
+  // dev-only seeding helper for manual/automated verification (stripped in prod)
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    const w = window as unknown as Record<string, unknown>
+    w.__seed = async (n = 12) => {
+      const files: File[] = []
+      for (let i = 1; i <= n; i++) {
+        const c = document.createElement('canvas')
+        c.width = c.height = 400
+        const ctx = c.getContext('2d')!
+        ctx.fillStyle = `hsl(${(i * 53) % 360} 62% 55%)`
+        ctx.fillRect(0, 0, 400, 400)
+        ctx.fillStyle = 'rgba(255,255,255,.95)'
+        ctx.font = 'bold 190px system-ui, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(String(i), 200, 212)
+        const blob: Blob = await new Promise((res) =>
+          c.toBlob((b) => res(b!), 'image/jpeg', 0.9),
+        )
+        files.push(new File([blob], `photo-${String(i).padStart(2, '0')}.jpg`, { type: 'image/jpeg' }))
+      }
+      const { importedIds } = await importPhotos(files)
+      const chapterIds: string[] = []
+      for (let i = 0; i < 2; i++) chapterIds.push(await addChapter())
+      // leave the first 3 in Unsorted; round-robin the rest into chapters
+      const rest = importedIds.slice(3)
+      const buckets: Record<string, string[]> = { [chapterIds[0]]: [], [chapterIds[1]]: [] }
+      rest.forEach((id, i) => buckets[chapterIds[i % 2]].push(id))
+      for (const c of chapterIds) if (buckets[c].length) await moveToChapter(buckets[c], c)
+      return `seeded ${n} photos into 2 chapters (3 unsorted)`
+    }
   }, [])
 
   // backup reminder (once per session)
@@ -78,6 +120,8 @@ export default function App() {
   }, [meta, board])
 
   // ---- handlers ----
+  const openPhotoPicker = () => photoInputRef.current?.click()
+
   const handleImport = async (files: File[]) => {
     void durable.requestPersist() // first user gesture → persistent storage
     setBusy({ label: 'Reading photos…', done: 0, total: files.length })
@@ -154,9 +198,7 @@ export default function App() {
 
   const handleImportBundle = async (file: File) => {
     if (
-      !confirm(
-        'Importing a backup will REPLACE the current project on this device. Continue?',
-      )
+      !confirm('Importing a backup will REPLACE the current project on this device. Continue?')
     )
       return
     setBusy({ label: 'Restoring backup…', done: 0, total: 0 })
@@ -176,6 +218,8 @@ export default function App() {
     await patchMeta({ onboarded: true })
   }
 
+  const isDraggingFile = useFileDrop(handleImport)
+
   // ---- render ----
   if (!board || !meta) {
     return (
@@ -185,9 +229,7 @@ export default function App() {
     )
   }
 
-  const chapters = board.chapterOrder
-    .map((id) => board.chaptersById[id])
-    .filter(Boolean)
+  const chapters = board.chapterOrder.map((id) => board.chaptersById[id]).filter(Boolean)
   const exportableCount = board.chapterOrder.reduce(
     (n, id) => n + (board.photosByChapter[id]?.length ?? 0),
     0,
@@ -199,6 +241,19 @@ export default function App() {
 
   return (
     <>
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept={ACCEPT_ATTR}
+        multiple
+        hidden
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? [])
+          e.target.value = ''
+          if (files.length) void handleImport(files)
+        }}
+      />
+
       <TopBar
         projectTitle={board.projectTitle}
         totalPhotos={board.totalPhotos}
@@ -206,8 +261,13 @@ export default function App() {
         est={storage}
         persisted={durable.persisted}
         canInstall={durable.canInstall}
+        theme={theme.theme}
+        density={grid.density}
+        onSetTheme={theme.setTheme}
+        onCycleTheme={theme.cycle}
+        onSetDensity={grid.setDensity}
         onRenameProject={renameProject}
-        onImport={handleImport}
+        onAddPhotos={openPhotoPicker}
         onAddChapter={() => void addChapter()}
         onExportZip={handleExportZip}
         onExportBundle={handleExportBundle}
@@ -225,6 +285,7 @@ export default function App() {
       <main className="app-main">
         <PhotobookBoard
           board={board}
+          tileTarget={grid.tileTarget}
           selectedIds={selection.selected}
           selectionCount={selection.count}
           onToggleSelect={handleToggleSelect}
@@ -233,7 +294,9 @@ export default function App() {
           onRenameChapter={(id, t) => void renameChapter(id, t)}
           onDeleteChapter={(id) => void deleteChapter(id)}
           onMoveChapter={handleMoveChapter}
+          onReorderChapters={(order) => void reorderChapters(order)}
           onMoveSelectedHere={(cid) => void handleMoveSelectedHere(cid)}
+          onAddPhotos={openPhotoPicker}
         />
       </main>
 
@@ -251,6 +314,16 @@ export default function App() {
         <StatusPill>
           Generating previews {thumbProgress.done}/{thumbProgress.total}
         </StatusPill>
+      )}
+
+      {isDraggingFile && (
+        <div className="file-drop-overlay">
+          <div className="file-drop-card">
+            <ImageIcon size={44} />
+            <strong>Drop photos to import</strong>
+            <span>JPEG or PNG</span>
+          </div>
+        </div>
       )}
 
       {lightbox && (

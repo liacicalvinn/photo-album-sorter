@@ -11,16 +11,20 @@ body,
   height: 100%;
 }
 
+html {
+  /* so drag-autoscroll & anchor jumps clear the sticky topbar */
+  scroll-padding-top: var(--topbar-h);
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
-  font-size: 15px;
-  line-height: 1.4;
+  font-size: var(--text-base);
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* respect iOS safe areas when installed */
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
     env(safe-area-inset-bottom) env(safe-area-inset-left);
   overscroll-behavior-y: none;
@@ -35,7 +39,7 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
 }
 
 button {
@@ -54,56 +58,110 @@ textarea {
   font-family: inherit;
 }
 
+a {
+  color: var(--accent-hover);
+}
+
+/* ---------- global focus ring ---------- */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  .cell.overlay,
+  .cell:hover {
+    transform: none !important;
+  }
+}
+
+/* ---------- scrollbars ---------- */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border-radius: 8px;
-  border: 2px solid var(--bg);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* ---------- shared primitives ---------- */
+/* ---------- buttons ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 7px;
   border: 1px solid var(--border-strong);
   background: var(--bg-elevated-2);
   color: var(--text);
-  border-radius: var(--r-md);
-  padding: 8px 12px;
-  font-weight: 550;
+  border-radius: var(--r-sm);
+  padding: 8px 13px;
+  font-size: var(--text-base);
+  font-weight: var(--fw-medium);
   line-height: 1;
   white-space: nowrap;
-  transition: background 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+  transition: background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
 }
 .btn:hover {
   background: var(--surface-hover);
+  border-color: var(--border-strong);
 }
 .btn:active {
-  transform: translateY(1px);
+  transform: translateY(0.5px) scale(0.985);
 }
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.42;
   cursor: not-allowed;
 }
+.btn svg {
+  flex: none;
+}
+
 .btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent-grad);
+  border-color: transparent;
   color: var(--accent-contrast);
+  font-weight: var(--fw-semibold);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 4px 14px -4px var(--accent-ring);
 }
 .btn.primary:hover {
-  background: var(--accent-hover);
+  filter: brightness(1.07) saturate(1.05);
+  background: var(--accent-grad);
 }
 .btn.danger {
-  border-color: var(--danger);
+  border-color: transparent;
   color: var(--danger);
   background: var(--danger-soft);
+}
+.btn.danger:hover {
+  background: var(--danger-soft);
+  filter: brightness(1.12);
 }
 .btn.ghost {
   background: transparent;
@@ -113,12 +171,18 @@ textarea {
   background: var(--surface-hover);
 }
 .btn.sm {
-  padding: 5px 9px;
-  font-size: 13px;
+  padding: 6px 10px;
+  font-size: var(--text-sm);
   border-radius: var(--r-sm);
 }
 .btn.icon {
-  padding: 7px;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+}
+.btn.icon.sm {
+  width: 30px;
+  height: 30px;
 }
 
 .spinner {
@@ -129,9 +193,21 @@ textarea {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
+.spinner.big {
+  width: 34px;
+  height: 34px;
+  border-width: 3px;
+}
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* shimmer for loading photo tiles */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }
 
@@ -142,4 +218,11 @@ textarea {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .btn.icon {
+    width: 40px;
+    height: 40px;
+  }
 }

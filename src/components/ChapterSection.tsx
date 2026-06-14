@@ -1,5 +1,17 @@
 import { useState } from 'react'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { PhotoGrid } from './PhotoGrid'
+import { Menu, MenuItem, MenuSep } from './Menu'
+import {
+  Grip,
+  ChevronDown,
+  MoreHorizontal,
+  ArrowUp,
+  ArrowDown,
+  Trash,
+  Check,
+} from './icons/Icons'
 import type { Chapter, Photo, PhotoId } from '../db/types'
 
 export interface ChapterSectionProps {
@@ -11,12 +23,15 @@ export interface ChapterSectionProps {
   selected: Set<string>
   selectionActive: boolean
   selectionCount: number
+  pageBase: number
+  showGlobalPage: boolean
   onToggleSelect: (id: string, shiftKey: boolean, orderedIds: string[]) => void
   onOpen: (id: string, orderedIds: string[]) => void
   onRename: (id: string, title: string) => void
   onDelete: (id: string) => void
   onMoveSelectedHere: (chapterId: string) => void
   onMoveChapter: (id: string, dir: -1 | 1) => void
+  onSelectAll: (orderedIds: string[]) => void
   canMoveUp: boolean
   canMoveDown: boolean
 }
@@ -30,18 +45,24 @@ export function ChapterSection({
   selected,
   selectionActive,
   selectionCount,
+  pageBase,
+  showGlobalPage,
   onToggleSelect,
   onOpen,
   onRename,
   onDelete,
   onMoveSelectedHere,
   onMoveChapter,
+  onSelectAll,
   canMoveUp,
   canMoveDown,
 }: ChapterSectionProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(chapter.title)
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: 'chapter:' + chapter.id })
 
   const commit = () => {
     setEditing(false)
@@ -50,15 +71,30 @@ export function ChapterSection({
   }
 
   return (
-    <section className="chapter">
+    <section
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={'chapter' + (isDragging ? ' dragging' : '')}
+    >
       <header className="chapter-head">
         <button
-          className="btn ghost icon chapter-collapse"
+          className="chapter-grip"
+          {...attributes}
+          {...listeners}
+          aria-label={`Drag to reorder ${chapter.title}`}
+          title="Drag to reorder chapter"
+        >
+          <Grip size={16} />
+        </button>
+
+        <button
+          className="btn ghost icon sm chapter-collapse"
           onClick={() => setCollapsed((c) => !c)}
           aria-label={collapsed ? 'Expand chapter' : 'Collapse chapter'}
-          title={collapsed ? 'Expand' : 'Collapse'}
         >
-          <span className={'chevron' + (collapsed ? ' collapsed' : '')}>▾</span>
+          <span className={'chevron' + (collapsed ? ' collapsed' : '')}>
+            <ChevronDown size={18} />
+          </span>
         </button>
 
         <span className="chapter-num">{index + 1}</span>
@@ -103,40 +139,81 @@ export function ChapterSection({
               Move {selectionCount} here
             </button>
           )}
-          <button
-            className="btn ghost icon"
-            disabled={!canMoveUp}
-            onClick={() => onMoveChapter(chapter.id, -1)}
-            aria-label="Move chapter up"
-            title="Move chapter up"
+
+          <Menu
+            align="right"
+            trigger={({ toggle }) => (
+              <button
+                className="btn ghost icon sm"
+                onClick={toggle}
+                aria-label="Chapter options"
+                title="Chapter options"
+              >
+                <MoreHorizontal size={18} />
+              </button>
+            )}
           >
-            ↑
-          </button>
-          <button
-            className="btn ghost icon"
-            disabled={!canMoveDown}
-            onClick={() => onMoveChapter(chapter.id, 1)}
-            aria-label="Move chapter down"
-            title="Move chapter down"
-          >
-            ↓
-          </button>
-          <button
-            className="btn ghost icon danger-hover"
-            onClick={() => {
-              if (
-                confirm(
-                  `Delete “${chapter.title}”?\nIts ${photoIds.length} photo(s) will move back to Unsorted (not deleted).`,
-                )
-              ) {
-                onDelete(chapter.id)
-              }
-            }}
-            aria-label="Delete chapter"
-            title="Delete chapter"
-          >
-            🗑
-          </button>
+            {(close) => (
+              <>
+                <MenuItem
+                  icon={<ArrowUp size={16} />}
+                  disabled={!canMoveUp}
+                  onClick={() => {
+                    close()
+                    onMoveChapter(chapter.id, -1)
+                  }}
+                >
+                  Move up
+                </MenuItem>
+                <MenuItem
+                  icon={<ArrowDown size={16} />}
+                  disabled={!canMoveDown}
+                  onClick={() => {
+                    close()
+                    onMoveChapter(chapter.id, 1)
+                  }}
+                >
+                  Move down
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    close()
+                    setDraft(chapter.title)
+                    setEditing(true)
+                  }}
+                >
+                  Rename…
+                </MenuItem>
+                <MenuItem
+                  icon={<Check size={16} />}
+                  disabled={photoIds.length === 0}
+                  onClick={() => {
+                    close()
+                    onSelectAll(photoIds)
+                  }}
+                >
+                  Select all in chapter
+                </MenuItem>
+                <MenuSep />
+                <MenuItem
+                  icon={<Trash size={16} />}
+                  danger
+                  onClick={() => {
+                    close()
+                    if (
+                      confirm(
+                        `Delete “${chapter.title}”?\nIts ${photoIds.length} photo(s) will move back to Unsorted (not deleted).`,
+                      )
+                    ) {
+                      onDelete(chapter.id)
+                    }
+                  }}
+                >
+                  Delete chapter
+                </MenuItem>
+              </>
+            )}
+          </Menu>
         </div>
       </header>
 
@@ -150,6 +227,8 @@ export function ChapterSection({
           selectionActive={selectionActive}
           onToggleSelect={onToggleSelect}
           onOpen={onOpen}
+          pageBase={pageBase}
+          showGlobalPage={showGlobalPage}
         />
       )}
     </section>

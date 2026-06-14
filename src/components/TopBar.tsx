@@ -1,7 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { StorageMeter } from './StorageMeter'
-import { ACCEPT_ATTR } from '../lib/fileTypes'
+import { Menu, MenuItem, MenuSep, MenuLabel } from './Menu'
+import {
+  Book,
+  Plus,
+  FolderPlus,
+  Download,
+  Save,
+  FolderOpen,
+  MoreHorizontal,
+  Install,
+  Sun,
+  Moon,
+  Monitor,
+  Check,
+} from './icons/Icons'
 import type { StorageEstimate } from '../hooks/useStorageEstimate'
+import type { Theme } from '../hooks/useTheme'
+import type { Density } from '../hooks/useGridDensity'
 
 export interface TopBarProps {
   projectTitle: string
@@ -10,8 +26,13 @@ export interface TopBarProps {
   est: StorageEstimate | null
   persisted: boolean
   canInstall: boolean
+  theme: Theme
+  density: Density
+  onSetTheme: (t: Theme) => void
+  onCycleTheme: () => void
+  onSetDensity: (d: Density) => void
   onRenameProject: (t: string) => void
-  onImport: (files: File[]) => void
+  onAddPhotos: () => void
   onAddChapter: () => void
   onExportZip: () => void
   onExportBundle: () => void
@@ -20,22 +41,11 @@ export interface TopBarProps {
 }
 
 export function TopBar(props: TopBarProps) {
-  const fileRef = useRef<HTMLInputElement | null>(null)
   const bundleRef = useRef<HTMLInputElement | null>(null)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(props.projectTitle)
-  const [menu, setMenu] = useState(false)
-  const menuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => setDraft(props.projectTitle), [props.projectTitle])
-  useEffect(() => {
-    if (!menu) return
-    const onDoc = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenu(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
-  }, [menu])
 
   const commit = () => {
     setEditing(false)
@@ -43,11 +53,13 @@ export function TopBar(props: TopBarProps) {
     else setDraft(props.projectTitle)
   }
 
+  const ThemeIcon = props.theme === 'light' ? Sun : props.theme === 'dark' ? Moon : Monitor
+
   return (
     <header className="topbar">
       <div className="topbar-left">
         <span className="brand" aria-hidden>
-          📚
+          <Book size={20} />
         </span>
         {editing ? (
           <input
@@ -69,85 +81,136 @@ export function TopBar(props: TopBarProps) {
             {props.projectTitle}
           </button>
         )}
+        {props.totalPhotos > 0 && (
+          <span className="topbar-meta">
+            {props.totalPhotos} {props.totalPhotos === 1 ? 'photo' : 'photos'}
+          </span>
+        )}
       </div>
 
       <div className="topbar-right">
         <StorageMeter est={props.est} persisted={props.persisted} />
 
-        {props.canInstall && (
-          <button className="btn sm" onClick={props.onInstall} title="Install app">
-            ⤓ Install
-          </button>
-        )}
+        <div className="segmented" role="group" aria-label="Thumbnail size">
+          {(['S', 'M', 'L'] as Density[]).map((d) => (
+            <button
+              key={d}
+              className={'seg' + (props.density === d ? ' on' : '')}
+              aria-pressed={props.density === d}
+              onClick={() => props.onSetDensity(d)}
+              title={d === 'S' ? 'Small thumbnails' : d === 'L' ? 'Large thumbnails' : 'Medium thumbnails'}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept={ACCEPT_ATTR}
-          multiple
-          hidden
-          onChange={(e) => {
-            const files = Array.from(e.target.files ?? [])
-            e.target.value = ''
-            if (files.length) props.onImport(files)
-          }}
-        />
-        <button className="btn primary" onClick={() => fileRef.current?.click()}>
-          ＋ Add photos
+        <button
+          className="btn ghost icon"
+          onClick={props.onCycleTheme}
+          aria-label={`Theme: ${props.theme}. Click to change.`}
+          title={`Appearance: ${props.theme}`}
+        >
+          <ThemeIcon size={18} />
         </button>
 
+        <span className="topbar-sep" aria-hidden />
+
         <button className="btn" onClick={props.onAddChapter}>
-          ＋ Chapter
+          <FolderPlus size={18} />
+          <span className="btn-text">Chapter</span>
+        </button>
+
+        <button className="btn primary" onClick={props.onAddPhotos}>
+          <Plus size={18} />
+          <span>Add photos</span>
         </button>
 
         <button
           className="btn"
           disabled={props.exportableCount === 0}
           onClick={props.onExportZip}
-          title="Export the final sorted ZIP"
+          title="Export the final sorted photos as a numbered ZIP"
         >
-          ⤓ Export ZIP
+          <Download size={18} />
+          <span className="btn-text">Export ZIP</span>
         </button>
 
-        <div className="move-menu-wrap" ref={menuRef}>
-          <button className="btn ghost icon" onClick={() => setMenu((m) => !m)} aria-label="Backup menu" title="Backup / restore">
-            ⋯
-          </button>
-          {menu && (
-            <div className="move-menu right" role="menu">
-              <button
-                className="move-menu-item"
+        <input
+          ref={bundleRef}
+          type="file"
+          accept=".zip,application/zip"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            e.target.value = ''
+            if (f) props.onImportBundle(f)
+          }}
+        />
+
+        <Menu
+          align="right"
+          trigger={({ toggle }) => (
+            <button className="btn ghost icon" onClick={toggle} aria-label="More options" title="More">
+              <MoreHorizontal size={18} />
+            </button>
+          )}
+        >
+          {(close) => (
+            <>
+              <MenuLabel>Appearance</MenuLabel>
+              {(
+                [
+                  ['system', 'System', Monitor],
+                  ['light', 'Light', Sun],
+                  ['dark', 'Dark', Moon],
+                ] as [Theme, string, typeof Sun][]
+              ).map(([val, label, Icon]) => (
+                <MenuItem
+                  key={val}
+                  icon={<Icon size={16} />}
+                  onClick={() => props.onSetTheme(val)}
+                >
+                  <span className="menu-item-row">
+                    {label}
+                    {props.theme === val && <Check size={15} />}
+                  </span>
+                </MenuItem>
+              ))}
+              <MenuSep />
+              {props.canInstall && (
+                <MenuItem
+                  icon={<Install size={16} />}
+                  onClick={() => {
+                    close()
+                    props.onInstall()
+                  }}
+                >
+                  Install app
+                </MenuItem>
+              )}
+              <MenuItem
+                icon={<Save size={16} />}
                 disabled={props.totalPhotos === 0}
                 onClick={() => {
-                  setMenu(false)
+                  close()
                   props.onExportBundle()
                 }}
               >
-                💾 Export project backup…
-              </button>
-              <input
-                ref={bundleRef}
-                type="file"
-                accept=".zip,application/zip"
-                hidden
-                onChange={(e) => {
-                  const f = e.target.files?.[0]
-                  e.target.value = ''
-                  if (f) props.onImportBundle(f)
-                }}
-              />
-              <button
-                className="move-menu-item"
+                Export project backup…
+              </MenuItem>
+              <MenuItem
+                icon={<FolderOpen size={16} />}
                 onClick={() => {
-                  setMenu(false)
+                  close()
                   bundleRef.current?.click()
                 }}
               >
-                📂 Import project backup…
-              </button>
-            </div>
+                Import project backup…
+              </MenuItem>
+            </>
           )}
-        </div>
+        </Menu>
       </div>
     </header>
   )

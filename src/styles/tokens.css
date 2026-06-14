@@ -1,45 +1,143 @@
+/* tokens.css — primitive ramp + semantic aliases.
+   "Quiet editorial": near-neutral cool-gray chrome so the PHOTOS carry the
+   colour; one rationed indigo accent (primary CTA + selection + active drop +
+   focus). Every legacy variable name is preserved so components don't churn;
+   new scale tokens are added. Dark is default; light via [data-theme="light"]
+   or prefers-color-scheme when no explicit choice is set. */
 :root {
-  /* Surfaces */
-  --bg: #111317;
-  --bg-elevated: #181b21;
-  --bg-elevated-2: #20242c;
-  --surface-hover: #262b34;
-  --border: #2c313b;
-  --border-strong: #3a414e;
+  color-scheme: dark light;
 
-  /* Text */
-  --text: #eef1f5;
-  --text-muted: #9aa4b2;
-  --text-faint: #6b7382;
+  /* Surfaces — cool neutral, slight blue cast so photos read warm */
+  --bg: #0e0f12;
+  --bg-elevated: #16181d;
+  --bg-elevated-2: #1e2128;
+  --surface-hover: #272b33;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.12);
 
-  /* Accent */
-  --accent: #6366f1;
-  --accent-hover: #7c7ef5;
+  /* Glass tints — chrome only (topbar + selection dock) */
+  --glass-1: rgba(14, 15, 18, 0.72);
+  --glass-2: rgba(18, 20, 26, 0.82);
+
+  /* Text (all >= AA on --bg) */
+  --text: #f2f4f7;
+  --text-muted: #a4adbb;
+  --text-faint: #6c7585;
+
+  /* ONE true accent + its single gradient (primary CTA + brand only) */
+  --accent: #6e72f0;
+  --accent-hover: #8487f5;
+  --accent-press: #5a5ee0;
   --accent-contrast: #ffffff;
-  --accent-soft: rgba(99, 102, 241, 0.16);
+  --accent-soft: rgba(110, 114, 240, 0.14);
+  --accent-ring: rgba(110, 114, 240, 0.5);
+  --accent-grad: linear-gradient(135deg, #6e72f0 0%, #8b5cf6 55%, #c66be8 100%);
+  --accent-glow: 0 0 0 1px var(--accent), 0 6px 22px -4px rgba(110, 114, 240, 0.55);
 
-  /* Status */
-  --danger: #ef4444;
-  --danger-soft: rgba(239, 68, 68, 0.15);
-  --warn: #f59e0b;
-  --warn-soft: rgba(245, 158, 11, 0.15);
-  --ok: #22c55e;
-  --ok-soft: rgba(34, 197, 94, 0.15);
+  /* Status — muted, each with a -soft @ ~.14 */
+  --danger: #f0616b;
+  --danger-soft: rgba(240, 97, 107, 0.14);
+  --warn: #f2b14e;
+  --warn-soft: rgba(242, 177, 78, 0.14);
+  --ok: #46ce8b;
+  --ok-soft: rgba(70, 206, 139, 0.14);
 
-  /* Radii */
-  --r-sm: 6px;
-  --r-md: 10px;
+  /* Type */
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Roboto Mono", monospace;
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 19px;
+  --text-xl: 23px;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+
+  /* Space — 4px base */
+  --space: 8px; /* legacy alias == --space-2 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-8: 48px;
+
+  /* Radius */
+  --r-sm: 8px;
+  --r-md: 12px;
   --r-lg: 16px;
+  --r-pill: 999px;
 
-  /* Shadows */
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.45);
-  --shadow-drag: 0 16px 40px rgba(0, 0, 0, 0.55);
+  /* Elevation — depth elsewhere = surface ramp + hairline; real shadow only on
+     floating layers (menus, modals, dock, drag overlay) */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-2: 0 4px 16px -2px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border);
+  --shadow-3: 0 12px 32px -4px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--border-strong);
+  --shadow-drag: 0 16px 40px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--accent);
 
-  /* Layout */
+  /* Grid (density control writes --tile) */
+  --tile: 168px;
+  --grid-gap: var(--space-2);
+
+  /* Layout + motion */
   --topbar-h: 56px;
-  --space: 8px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.2, 1.3, 0.4, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 260ms;
+  --ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
 
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+/* Light "daylight" mode — same names rebound; accent darkened for white */
+:root[data-theme="light"] {
+  --bg: #f6f7f9;
+  --bg-elevated: #ffffff;
+  --bg-elevated-2: #f0f2f5;
+  --surface-hover: #e6e9ee;
+  --border: rgba(16, 18, 22, 0.1);
+  --border-strong: rgba(16, 18, 22, 0.16);
+  --glass-1: rgba(255, 255, 255, 0.72);
+  --glass-2: rgba(248, 249, 251, 0.85);
+  --text: #15181d;
+  --text-muted: #525a66;
+  --text-faint: #8a929e;
+  --accent: #5557e0;
+  --accent-hover: #6a6cea;
+  --accent-press: #4446cc;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(85, 87, 224, 0.12);
+  --accent-ring: rgba(85, 87, 224, 0.45);
+  --shadow-1: 0 1px 2px rgba(16, 18, 22, 0.1);
+  --shadow-2: 0 4px 16px -2px rgba(16, 18, 22, 0.16), 0 0 0 1px var(--border);
+  --shadow-3: 0 12px 32px -4px rgba(16, 18, 22, 0.2), 0 0 0 1px var(--border-strong);
+}
+
+/* System: follow the OS when no explicit data-theme is chosen */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]):not([data-theme="light"]) {
+    --bg: #f6f7f9;
+    --bg-elevated: #ffffff;
+    --bg-elevated-2: #f0f2f5;
+    --surface-hover: #e6e9ee;
+    --border: rgba(16, 18, 22, 0.1);
+    --border-strong: rgba(16, 18, 22, 0.16);
+    --glass-1: rgba(255, 255, 255, 0.72);
+    --glass-2: rgba(248, 249, 251, 0.85);
+    --text: #15181d;
+    --text-muted: #525a66;
+    --text-faint: #8a929e;
+    --accent: #5557e0;
+    --accent-hover: #6a6cea;
+    --accent-press: #4446cc;
+    --accent-soft: rgba(85, 87, 224, 0.12);
+    --accent-ring: rgba(85, 87, 224, 0.45);
+    --shadow-1: 0 1px 2px rgba(16, 18, 22, 0.1);
+    --shadow-2: 0 4px 16px -2px rgba(16, 18, 22, 0.16), 0 0 0 1px var(--border);
+    --shadow-3: 0 12px 32px -4px rgba(16, 18, 22, 0.2), 0 0 0 1px var(--border-strong);
+  }
 }

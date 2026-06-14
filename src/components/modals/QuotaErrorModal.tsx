@@ -9,7 +9,7 @@ export function QuotaErrorModal({
 }) {
   return (
     <Modal
-      title="⚠️ Storage is full"
+      title="Storage is full"
       onClose={onClose}
       footer={
         <>

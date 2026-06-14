@@ -47,7 +47,7 @@ export function ExportConfirmModal({
 
       {excluded > 0 && (
         <div className="exclude-warn">
-          <strong>⚠️ {excluded} unsorted photo(s) will NOT be included.</strong>
+          <strong>{excluded} unsorted photo(s) will NOT be included.</strong>
           <p className="muted">
             Only photos placed in a chapter are exported. Move them into a chapter first if
             you want them in the book.

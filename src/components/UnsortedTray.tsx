@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PhotoGrid } from './PhotoGrid'
+import { Inbox, Info, ChevronDown } from './icons/Icons'
 import { UNSORTED, type Photo, type PhotoId } from '../db/types'
 
 export interface UnsortedTrayProps {
@@ -32,13 +33,18 @@ export function UnsortedTray({
     <section className="chapter unsorted">
       <header className="chapter-head">
         <button
-          className="btn ghost icon chapter-collapse"
+          className="btn ghost icon sm chapter-collapse"
           onClick={() => setCollapsed((c) => !c)}
           aria-label={collapsed ? 'Expand' : 'Collapse'}
         >
-          <span className={'chevron' + (collapsed ? ' collapsed' : '')}>▾</span>
+          <span className={'chevron' + (collapsed ? ' collapsed' : '')}>
+            <ChevronDown size={18} />
+          </span>
         </button>
-        <span className="chapter-title unsorted-title">📥 Unsorted</span>
+        <span className="unsorted-icon" aria-hidden>
+          <Inbox size={18} />
+        </span>
+        <span className="chapter-title unsorted-title">Unsorted</span>
         <span className="chapter-count">{photoIds.length}</span>
         <div className="chapter-actions">
           <button className="btn sm ghost" onClick={() => onSelectAll(photoIds)}>
@@ -48,9 +54,12 @@ export function UnsortedTray({
       </header>
 
       {hasChapters && !collapsed && (
-        <p className="unsorted-hint">
-          Select photos below, then use the bar at the bottom to move them into a chapter.
-          Unsorted photos are <strong>excluded</strong> from the final export.
+        <p className="info-strip">
+          <Info size={16} />
+          <span>
+            Select photos and move them into a chapter. Unsorted photos are{' '}
+            <strong>not included</strong> in the export.
+          </span>
         </p>
       )}
 
@@ -64,6 +73,7 @@ export function UnsortedTray({
           selectionActive={selectionActive}
           onToggleSelect={onToggleSelect}
           onOpen={onOpen}
+          isUnsorted
         />
       )}
     </section>

@@ -11,7 +11,7 @@ export function FirstRunModal({
 }) {
   return (
     <Modal
-      title="📚 Welcome to Photo Album Sorter"
+      title="Welcome to Photo Album Sorter"
       footer={
         <button className="btn primary" onClick={onGetStarted}>
           Got it — let’s start

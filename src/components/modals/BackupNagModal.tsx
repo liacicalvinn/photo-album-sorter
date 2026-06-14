@@ -13,7 +13,7 @@ export function BackupNagModal({
 }) {
   return (
     <Modal
-      title="💾 Time to back up"
+      title="Time to back up"
       onClose={onDismiss}
       footer={
         <>
