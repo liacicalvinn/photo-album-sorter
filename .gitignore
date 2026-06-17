@@ -1,7 +1,8 @@
 node_modules
 dist
 dev-dist
-.claude
+.claude/*
+!.claude/skills/
 .vite
 *.local
 .DS_Store
